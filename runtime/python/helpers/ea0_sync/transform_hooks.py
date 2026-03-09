@@ -35,7 +35,7 @@ def transform_hooks(vendor_root: Path, output_root: Path) -> list[str]:
     unsupported: list[str] = []
     mapped_events: dict[str, str] = {}
 
-    # Primary source: ECC hooks/hooks.json event configuration.
+    # Primary source: EA0 hooks/hooks.json event configuration.
     config_path = hooks_root / "hooks.json"
     if config_path.is_file():
         cfg = json.loads(config_path.read_text(encoding="utf-8"))
@@ -57,12 +57,12 @@ def transform_hooks(vendor_root: Path, output_root: Path) -> list[str]:
 
             ext_dir = output_root / "usr" / "extensions" / point
             ext_dir.mkdir(parents=True, exist_ok=True)
-            target = ext_dir / f"_80_ecc_{event_name.lower()}.py"
+            target = ext_dir / f"_80_ea0_{event_name.lower()}.py"
             command_json = json.dumps(commands)
             content = (
                 "from python.helpers.extension import Extension\n"
-                "from python.helpers.ecc_sync.hook_runtime import run_hook_commands\n\n"
-                "class EccHookBridge(Extension):\n"
+                "from python.helpers.ea0_sync.hook_runtime import run_hook_commands\n\n"
+                "class Ea0HookBridge(Extension):\n"
                 "    async def execute(self, **kwargs):\n"
                 f"        commands = {command_json}\n"
                 "        payload = {\n"
@@ -82,7 +82,7 @@ def transform_hooks(vendor_root: Path, output_root: Path) -> list[str]:
     if not hooks_root.is_dir():
         hooks_root = vendor_root / "scripts" / "hooks"
         if not hooks_root.is_dir():
-            state_dir = output_root / "usr" / "plugins" / "ecc-integration" / "state"
+            state_dir = output_root / "usr" / "plugins" / "ea0-integration" / "state"
             state_dir.mkdir(parents=True, exist_ok=True)
             report_path = state_dir / "hook_compatibility.json"
             report = {"mapped": mapped, "unsupported": sorted(unsupported), "mapped_events": mapped_events}
@@ -102,12 +102,12 @@ def transform_hooks(vendor_root: Path, output_root: Path) -> list[str]:
         ext_dir = output_root / "usr" / "extensions" / point
         ext_dir.mkdir(parents=True, exist_ok=True)
 
-        target = ext_dir / f"_80_ecc_{hook_file.stem.lower()}.py"
+        target = ext_dir / f"_80_ea0_{hook_file.stem.lower()}.py"
         content = (
             "from python.helpers.extension import Extension\n\n"
-            "class EccHookBridge(Extension):\n"
+            "class Ea0HookBridge(Extension):\n"
             "    async def execute(self, **kwargs):\n"
-            f"        # Source ECC hook: {hook_file.name}\n"
+            f"        # Source EA0 hook: {hook_file.name}\n"
             "        # TODO: execute adapted hook semantics.\n"
             "        return None\n"
         )
@@ -116,7 +116,7 @@ def transform_hooks(vendor_root: Path, output_root: Path) -> list[str]:
         generated.append(rel)
         mapped[hook_file.name] = point
 
-    state_dir = output_root / "usr" / "plugins" / "ecc-integration" / "state"
+    state_dir = output_root / "usr" / "plugins" / "ea0-integration" / "state"
     state_dir.mkdir(parents=True, exist_ok=True)
     report_path = state_dir / "hook_compatibility.json"
     report = {

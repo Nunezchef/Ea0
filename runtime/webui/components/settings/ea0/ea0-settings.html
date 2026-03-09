@@ -1,0 +1,153 @@
+<html>
+<head>
+  <title>EA0 Integration</title>
+  <script type="module">
+    import { store } from "/components/settings/ea0/ea0-store.js";
+  </script>
+</head>
+<body>
+  <div x-data>
+    <template x-if="$store.ea0Settings">
+      <div x-init="$store.ea0Settings.loadStatus()">
+        <div class="section-title">EA0 Integration</div>
+        <div class="section-description">
+          Manage EA0 install/sync, Git updates, and backup points.
+        </div>
+
+        <div class="field">
+          <div class="field-label">
+            <div class="field-title">Health Status</div>
+            <div class="field-description">Workspace health for EA0 components.</div>
+          </div>
+          <div class="field-control" x-text="$store.ea0Settings.status?.health_report?.status || 'unknown'"></div>
+        </div>
+
+        <div class="field">
+          <div class="field-label">
+            <div class="field-title">EA0 Git Repository</div>
+            <div class="field-description">Source repository configured for EA0 updates.</div>
+          </div>
+          <div class="field-control">
+            <a x-show="$store.ea0Settings.status?.vendor?.remote_url"
+               :href="$store.ea0Settings.status?.vendor?.remote_url"
+               target="_blank"
+               rel="noopener noreferrer"
+               x-text="$store.ea0Settings.status?.vendor?.remote_url"></a>
+            <span x-show="!$store.ea0Settings.status?.vendor?.remote_url">Not available</span>
+          </div>
+        </div>
+
+        <div class="field">
+          <div class="field-label">
+            <div class="field-title">Current Version</div>
+            <div class="field-description">Current commit in the local EA0 vendor checkout.</div>
+          </div>
+          <div class="field-control" x-text="$store.ea0Settings.status?.vendor?.current_sha || 'unknown'"></div>
+        </div>
+
+        <div class="field">
+          <div class="field-label">
+            <div class="field-title">Installed Version</div>
+            <div class="field-description">Commit used for the last successful EA0 sync.</div>
+          </div>
+          <div class="field-control" x-text="$store.ea0Settings.status?.vendor_state?.commit_sha || $store.ea0Settings.status?.manifest?.source_sha || 'unknown'"></div>
+        </div>
+
+        <div class="field">
+          <div class="field-label">
+            <div class="field-title">Last Sync</div>
+            <div class="field-description">Timestamp of the latest EA0 sync state update.</div>
+          </div>
+          <div class="field-control" x-text="$store.ea0Settings.formatTime($store.ea0Settings.status?.vendor_state?.updated_at)"></div>
+        </div>
+        <div class="field">
+          <div class="field-label">
+            <div class="field-title">EA0 Prompt Injection</div>
+            <div class="field-description">Confirms EA0 reference prompt and core-memory bridge are present.</div>
+          </div>
+          <div class="field-control">
+            <div>System Prompt Extension: <span x-text="$store.ea0Settings.status?.injection?.system_prompt_extension ? 'active' : 'missing'"></span></div>
+            <div>Reference Prompt: <span x-text="$store.ea0Settings.status?.injection?.reference_prompt ? 'active' : 'missing'"></span></div>
+            <div>Core Memory: <span x-text="$store.ea0Settings.status?.injection?.core_memory ? 'active' : 'missing'"></span></div>
+          </div>
+        </div>
+
+        <div class="field">
+          <div class="field-label">
+            <div class="field-title">Backup Before Update</div>
+            <div class="field-description">Create a backup point before pulling latest EA0 from Git.</div>
+          </div>
+          <div class="field-control">
+            <label class="toggle">
+              <input type="checkbox" x-model="$store.ea0Settings.backupBeforeUpdate" />
+              <span class="toggler"></span>
+            </label>
+          </div>
+        </div>
+
+        <div class="field">
+          <div class="field-label">
+            <div class="field-title">Install / Sync EA0</div>
+            <div class="field-description">Generate/update all EA0 integration assets in Agent0.</div>
+          </div>
+          <div class="field-control">
+            <button class="btn btn-field"
+                    @click="$store.ea0Settings.syncNow()"
+                    :disabled="$store.ea0Settings.loading">Install / Sync EA0</button>
+          </div>
+        </div>
+
+        <div class="field">
+          <div class="field-label">
+            <div class="field-title">Update EA0 From Git</div>
+            <div class="field-description">Pull latest changes from repository and re-sync into Agent0.</div>
+          </div>
+          <div class="field-control">
+            <button class="btn btn-field"
+                    @click="$store.ea0Settings.updateLatest()"
+                    :disabled="$store.ea0Settings.loading">Update Latest (Git)</button>
+          </div>
+        </div>
+
+        <div class="field">
+          <div class="field-label">
+            <div class="field-title">Create Backup Point</div>
+            <div class="field-description">Save EA0-managed files state for rollback.</div>
+          </div>
+          <div class="field-control">
+            <button class="btn btn-field"
+                    @click="$store.ea0Settings.createBackup()"
+                    :disabled="$store.ea0Settings.loading">Create Backup Point</button>
+          </div>
+        </div>
+
+        <div class="field">
+          <div class="field-label">
+            <div class="field-title">Restore Backup</div>
+            <div class="field-description">Restore EA0 files from a previously created backup point.</div>
+          </div>
+          <div class="field-control">
+            <select x-model="$store.ea0Settings.selectedBackupId">
+              <option value="">Select backup</option>
+              <template x-for="item in ($store.ea0Settings.backups || [])" :key="item.id">
+                <option :value="item.id" x-text="item.id"></option>
+              </template>
+            </select>
+            <button class="btn btn-field"
+                    @click="$store.ea0Settings.restoreSelectedBackup()"
+                    :disabled="$store.ea0Settings.loading || !$store.ea0Settings.selectedBackupId">Restore Selected</button>
+          </div>
+        </div>
+
+        <div x-show="$store.ea0Settings.loading" class="loading">
+          <span>Processing EA0 action...</span>
+        </div>
+
+        <div x-show="$store.ea0Settings.error" class="error">
+          <span x-text="$store.ea0Settings.error"></span>
+        </div>
+      </div>
+    </template>
+  </div>
+</body>
+</html>

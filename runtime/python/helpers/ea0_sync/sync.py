@@ -5,15 +5,15 @@ from pathlib import Path
 import shutil
 import tempfile
 
-from python.helpers.ecc_sync.manifest import write_manifest, read_manifest, diff_stale_paths
-from python.helpers.ecc_sync.vendor_manager import write_vendor_state
-from python.helpers.ecc_sync.transform_skills import transform_skills
-from python.helpers.ecc_sync.transform_agents import transform_agents
-from python.helpers.ecc_sync.transform_commands import transform_commands
-from python.helpers.ecc_sync.transform_hooks import transform_hooks
-from python.helpers.ecc_sync.transform_core_memories import transform_core_memories
-from python.helpers.ecc_sync.transform_ecosystem_tools import transform_ecosystem_tools
-from python.helpers.ecc_sync.healthcheck import evaluate_workspace_health
+from python.helpers.ea0_sync.manifest import write_manifest, read_manifest, diff_stale_paths
+from python.helpers.ea0_sync.vendor_manager import write_vendor_state
+from python.helpers.ea0_sync.transform_skills import transform_skills
+from python.helpers.ea0_sync.transform_agents import transform_agents
+from python.helpers.ea0_sync.transform_commands import transform_commands
+from python.helpers.ea0_sync.transform_hooks import transform_hooks
+from python.helpers.ea0_sync.transform_core_memories import transform_core_memories
+from python.helpers.ea0_sync.transform_ecosystem_tools import transform_ecosystem_tools
+from python.helpers.ea0_sync.healthcheck import evaluate_workspace_health
 
 
 @dataclass(slots=True)
@@ -25,11 +25,11 @@ class SyncResult:
 
 
 def run_sync(*, vendor_root: Path, workspace_root: Path, source_sha: str) -> SyncResult:
-    manifest_path = workspace_root / "usr" / "plugins" / "ecc-integration" / "state" / "manifest.json"
+    manifest_path = workspace_root / "usr" / "plugins" / "ea0-integration" / "state" / "manifest.json"
     previous_manifest = read_manifest(manifest_path)
     previous_generated = previous_manifest.get("generated_paths", []) if isinstance(previous_manifest, dict) else []
 
-    with tempfile.TemporaryDirectory(prefix="ecc_sync_") as td:
+    with tempfile.TemporaryDirectory(prefix="ea0_sync_") as td:
         stage_root = Path(td)
 
         generated: list[str] = []
@@ -40,12 +40,12 @@ def run_sync(*, vendor_root: Path, workspace_root: Path, source_sha: str) -> Syn
         generated += transform_core_memories(vendor_root, stage_root)
         generated += transform_ecosystem_tools(vendor_root, stage_root)
 
-        state_dir = stage_root / "usr" / "plugins" / "ecc-integration" / "state"
+        state_dir = stage_root / "usr" / "plugins" / "ea0-integration" / "state"
         manifest_path_stage = state_dir / "manifest.json"
         write_manifest(manifest_path_stage, source_sha=source_sha, generated_paths=generated)
         write_vendor_state(state_dir / "vendor_state.json", source=str(vendor_root), commit_sha=source_sha)
 
-        # Remove only stale files from previous ECC-generated manifest, preserving unrelated usr content.
+        # Remove only stale files from previous EA0-generated manifest, preserving unrelated usr content.
         stale_paths = diff_stale_paths(previous=previous_generated, current=generated)
         for rel in stale_paths:
             target = workspace_root / rel

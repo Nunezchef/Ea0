@@ -7,10 +7,10 @@ function toast(type, text, timeoutSec = 4) {
 }
 
 function extractError(response) {
-  if (!response) return "Unknown ECC error";
+  if (!response) return "Unknown EA0 error";
   if (response.error) return String(response.error);
   if (response.git && response.git.error) return String(response.git.error);
-  return "ECC operation failed";
+  return "EA0 operation failed";
 }
 
 const model = {
@@ -22,7 +22,7 @@ const model = {
   backupBeforeUpdate: true,
 
   async _call(payload) {
-    return await API.callJsonApi("ecc_sync", payload);
+    return await API.callJsonApi("ea0_sync", payload);
   },
 
   async _callChecked(payload) {
@@ -49,7 +49,7 @@ const model = {
       this.backups = backupList.items || [];
     } catch (e) {
       this.error = e.message || String(e);
-      toast("error", `ECC status failed: ${this.error}`, 6);
+      toast("error", `EA0 status failed: ${this.error}`, 6);
     } finally {
       this.loading = false;
     }
@@ -60,11 +60,11 @@ const model = {
     this.error = null;
     try {
       await this._callChecked({ action: "sync" });
-      toast("success", "ECC installed/synced");
+      toast("success", "EA0 installed/synced");
       await this.loadStatus();
     } catch (e) {
       this.error = e.message || String(e);
-      toast("error", `ECC sync failed: ${this.error}`, 6);
+      toast("error", `EA0 sync failed: ${this.error}`, 6);
     } finally {
       this.loading = false;
     }
@@ -78,11 +78,11 @@ const model = {
         action: "update_latest",
         backup_before_update: this.backupBeforeUpdate,
       });
-      toast("success", "ECC updated from Git");
+      toast("success", "EA0 updated from Git");
       await this.loadStatus();
     } catch (e) {
       this.error = e.message || String(e);
-      toast("error", `ECC update failed: ${this.error}`, 6);
+      toast("error", `EA0 update failed: ${this.error}`, 6);
     } finally {
       this.loading = false;
     }
@@ -93,12 +93,12 @@ const model = {
     this.error = null;
     try {
       await this._callChecked({ action: "backup_create" });
-      toast("success", "ECC backup point created");
+      toast("success", "EA0 backup point created");
       const backupList = await this._callChecked({ action: "backup_list" });
       this.backups = backupList.items || [];
     } catch (e) {
       this.error = e.message || String(e);
-      toast("error", `ECC backup failed: ${this.error}`, 6);
+      toast("error", `EA0 backup failed: ${this.error}`, 6);
     } finally {
       this.loading = false;
     }
@@ -113,16 +113,16 @@ const model = {
         action: "backup_restore",
         backup_id: this.selectedBackupId,
       });
-      toast("success", "ECC backup restored");
+      toast("success", "EA0 backup restored");
       await this.loadStatus();
     } catch (e) {
       this.error = e.message || String(e);
-      toast("error", `ECC restore failed: ${this.error}`, 6);
+      toast("error", `EA0 restore failed: ${this.error}`, 6);
     } finally {
       this.loading = false;
     }
   },
 };
 
-const store = createStore("eccSettings", model);
+const store = createStore("ea0Settings", model);
 export { store };

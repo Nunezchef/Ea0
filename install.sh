@@ -15,7 +15,7 @@ else
   exit 1
 fi
 
-PLUGIN_NAME="everything-agent0"
+PLUGIN_NAME="ea0"
 PLUGIN_DIR="$A0_ROOT/usr/plugins/$PLUGIN_NAME"
 SYMLINK="$A0_ROOT/plugins/$PLUGIN_NAME"
 

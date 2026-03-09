@@ -23,14 +23,14 @@ def evaluate_health(components: Mapping[str, bool]) -> dict[str, Any]:
 
 def evaluate_workspace_health(workspace_root: Path) -> dict[str, Any]:
     ext_root = workspace_root / "usr" / "extensions"
-    has_ecc_hooks = ext_root.is_dir() and any(ext_root.rglob("_80_ecc_*.py"))
+    has_ea0_hooks = ext_root.is_dir() and any(ext_root.rglob("_80_ea0_*.py"))
     components = {
-        "skills": (workspace_root / "usr" / "skills" / "ecc").is_dir(),
-        "agents": (workspace_root / "usr" / "agents" / "ecc").is_dir(),
-        "commands": (workspace_root / "usr" / "knowledge" / "ecc-commands").is_dir(),
-        "hooks": has_ecc_hooks,
-        "tools": (workspace_root / "usr" / "plugins" / "ecc-integration" / "tools").is_dir(),
-        "core_memories": (workspace_root / "usr" / "knowledge" / "core-memories" / "ecc").is_dir(),
+        "skills": (workspace_root / "usr" / "skills" / "ea0").is_dir(),
+        "agents": (workspace_root / "usr" / "agents" / "ea0").is_dir(),
+        "commands": (workspace_root / "usr" / "knowledge" / "ea0-commands").is_dir(),
+        "hooks": has_ea0_hooks,
+        "tools": (workspace_root / "usr" / "plugins" / "ea0-integration" / "tools").is_dir(),
+        "core_memories": (workspace_root / "usr" / "knowledge" / "core-memories" / "ea0").is_dir(),
     }
     report = evaluate_health(components)
     report["components"] = components

@@ -7,12 +7,12 @@ import shutil
 import tempfile
 from typing import Any
 
-ECC_PATHS = [
-    "usr/skills/ecc",
-    "usr/agents/ecc",
-    "usr/knowledge/ecc-commands",
-    "usr/knowledge/core-memories/ecc",
-    "usr/plugins/ecc-integration/state",
+EA0_PATHS = [
+    "usr/skills/ea0",
+    "usr/agents/ea0",
+    "usr/knowledge/ea0-commands",
+    "usr/knowledge/core-memories/ea0",
+    "usr/plugins/ea0-integration/state",
 ]
 
 
@@ -21,7 +21,7 @@ def _utc_now() -> str:
 
 
 def _backups_root(workspace_root: Path) -> Path:
-    return workspace_root / "usr" / "plugins" / "ecc-integration" / "backups"
+    return workspace_root / "usr" / "plugins" / "ea0-integration" / "backups"
 
 
 def create_backup_point(*, workspace_root: Path, source_sha: str) -> dict[str, Any]:
@@ -31,7 +31,7 @@ def create_backup_point(*, workspace_root: Path, source_sha: str) -> dict[str, A
     target.mkdir(parents=True, exist_ok=True)
 
     included: list[str] = []
-    for rel in ECC_PATHS:
+    for rel in EA0_PATHS:
         src = workspace_root / rel
         if not src.exists():
             continue
@@ -80,18 +80,18 @@ def restore_backup_point(*, workspace_root: Path, backup_id: str) -> dict[str, A
         raise FileNotFoundError(f"Backup metadata missing: {backup_id}")
     metadata = json.loads(metadata_path.read_text(encoding="utf-8"))
 
-    with tempfile.TemporaryDirectory(prefix="ecc_restore_") as td:
+    with tempfile.TemporaryDirectory(prefix="ea0_restore_") as td:
         stage = Path(td) / "restore"
         shutil.copytree(backup_root, stage, dirs_exist_ok=True)
 
-        for rel in ECC_PATHS:
+        for rel in EA0_PATHS:
             dst = workspace_root / rel
             if dst.is_file():
                 dst.unlink()
             elif dst.is_dir():
                 shutil.rmtree(dst)
 
-        for rel in ECC_PATHS:
+        for rel in EA0_PATHS:
             src = stage / rel
             if not src.exists():
                 continue

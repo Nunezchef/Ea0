@@ -4,9 +4,9 @@ from pathlib import Path
 import shutil
 
 
-def transform_agents(vendor_root: Path, output_root: Path) -> list[str]:
-    src_base = vendor_root / "agents"
-    dst_base = output_root / "usr" / "agents" / "ecc"
+def transform_commands(vendor_root: Path, output_root: Path) -> list[str]:
+    src_base = vendor_root / "commands"
+    dst_base = output_root / "usr" / "knowledge" / "ea0-commands"
     generated: list[str] = []
 
     if not src_base.is_dir():

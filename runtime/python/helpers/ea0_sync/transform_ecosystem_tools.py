@@ -4,9 +4,9 @@ from pathlib import Path
 import shutil
 
 
-def transform_commands(vendor_root: Path, output_root: Path) -> list[str]:
-    src_base = vendor_root / "commands"
-    dst_base = output_root / "usr" / "knowledge" / "ecc-commands"
+def transform_ecosystem_tools(vendor_root: Path, output_root: Path) -> list[str]:
+    src_base = vendor_root / "scripts"
+    dst_base = output_root / "usr" / "plugins" / "ea0-integration" / "tools"
     generated: list[str] = []
 
     if not src_base.is_dir():

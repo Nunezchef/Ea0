@@ -6,7 +6,7 @@ import shutil
 
 def transform_skills(vendor_root: Path, output_root: Path) -> list[str]:
     src_base = vendor_root / "skills"
-    dst_base = output_root / "usr" / "skills" / "ecc"
+    dst_base = output_root / "usr" / "skills" / "ea0"
     generated: list[str] = []
 
     if not src_base.is_dir():

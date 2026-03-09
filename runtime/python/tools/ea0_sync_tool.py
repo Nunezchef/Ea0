@@ -3,12 +3,12 @@ from __future__ import annotations
 from pathlib import Path
 
 from python.helpers.tool import Tool, Response
-from python.helpers.ecc_sync.sync import run_sync
+from python.helpers.ea0_sync.sync import run_sync
 from python.helpers.notification import NotificationManager, NotificationType, NotificationPriority
 from python.helpers.extension import clear_extensions_cache
 
 
-class EccSyncTool(Tool):
+class Ea0SyncTool(Tool):
     async def execute(self, **kwargs) -> Response:
         workspace_raw = kwargs.get("workspace_root") or self.args.get("workspace_root")
         workspace_root = Path(str(workspace_raw)).resolve() if workspace_raw else Path(__file__).resolve().parents[2]
@@ -24,18 +24,18 @@ class EccSyncTool(Tool):
             NotificationManager.send_notification(
                 NotificationType.SUCCESS if result.success else NotificationType.ERROR,
                 NotificationPriority.NORMAL if result.success else NotificationPriority.HIGH,
-                f"ECC integration {'installed' if result.success else 'install failed'} ({len(result.generated_paths)} files).",
-                "ECC Integration",
+                f"EA0 integration {'installed' if result.success else 'install failed'} ({len(result.generated_paths)} files).",
+                "EA0 Integration",
                 detail=f"health={health_status}, source_sha={source_sha}",
                 display_time=5 if result.success else 8,
-                group="ecc-install",
+                group="ea0-install",
             )
         except Exception:
             # Notification requires active AgentContext; keep sync tool usable in tests/CLI paths.
             pass
         return Response(
             message=(
-                f"ECC sync {'succeeded' if result.success else 'failed'}: "
+                f"EA0 sync {'succeeded' if result.success else 'failed'}: "
                 f"{len(result.generated_paths)} files, manifest={result.manifest_path}, health={health_status}"
             ),
             break_loop=False,
