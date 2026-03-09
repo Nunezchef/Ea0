@@ -1,24 +1,112 @@
-# Everything Agent0 (Ea0 / ECC Plugin)
+# Everything Agent0 (Ea0)
 
-Everything Agent0 is a standalone Agent0 plugin repository that integrates **Everything Claude Code (ECC)** into a clean Agent0 install.
+Ea0 is a **plugin-only integration layer** that ports Everything Claude Code (ECC) into Agent0.
 
-It provides:
-- ECC asset sync into Agent0 (`skills`, `agents`, `commands`, `core memories`, `ecosystem tools`)
-- ECC hook mapping from Claude-style events into Agent0 extension points
-- ECC settings panel under **Settings -> External Services -> ECC Integration**
-- One-click actions: **Install/Sync**, **Update Latest (Git)**, **Create Backup Point**, **Restore Backup**
-- Git visibility in UI: repo URL, current vendor SHA, installed/synced SHA, last sync
-- Prompt injection so Agent0 knows ECC is active and should use ECC workflow assets
+It does not ship a fork of Agent0.  
+It installs a runtime transformer pipeline that:
+- pulls ECC content from `usr/everything-claude-code`
+- transforms it into Agent0-compatible layout
+- injects ECC workflow guidance into Agent0 system prompt
+- maps ECC hooks/events into Agent0 extension points
+- provides UI controls for sync, update, backup, restore
 
-## What Ea0 Changes in Agent0
+## Scope
 
-### Backend
-Installs:
-- `python/api/ecc_sync.py`
-- `python/tools/ecc_sync_tool.py`
-- `python/helpers/ecc_sync/*.py`
+Ea0 integrates the ECC ecosystem into Agent0 in six domains:
+- Skills
+- Agents
+- Command knowledge
+- Hook bridges
+- Ecosystem tools/scripts
+- Core memory + system prompt context
 
-Provides ECC API actions:
+## Architecture
+
+Ea0 runtime consists of:
+- API: `python/api/ecc_sync.py`
+- Tool: `python/tools/ecc_sync_tool.py`
+- Transformers: `python/helpers/ecc_sync/*.py`
+- UI panel: `webui/components/settings/ecc/*`
+- Prompt injection: `usr/extensions/system_prompt/_50_ecc_context.py`
+
+### Transformation model
+
+Ea0 does not use ECC files in-place inside Agent0 runtime. It transforms and writes generated outputs into `usr/*` and state under `usr/plugins/ecc-integration/state/*`.
+
+Primary flow:
+1. Resolve ECC vendor root (`usr/everything-claude-code`)
+2. Transform ECC domains into Agent0 targets
+3. Write manifest/vendor state
+4. Remove stale previously-generated files
+5. Promote staged outputs into workspace
+6. Recompute health report
+
+## ECC -> Agent0 Mapping
+
+| ECC domain | Agent0 output |
+|---|---|
+| skills | `usr/skills/ecc/*` |
+| agents | `usr/agents/ecc/*` |
+| command docs | `usr/knowledge/ecc-commands/*` |
+| contexts | `usr/knowledge/core-memories/ecc/*` |
+| scripts/tools | `usr/plugins/ecc-integration/tools/*` |
+| hook config/events | `usr/extensions/*/_80_ecc_*.py` |
+
+## Hook Integration
+
+ECC event semantics are bridged into Agent0 extension points:
+
+| ECC event | Agent0 extension point |
+|---|---|
+| `SessionStart` | `agent_init` |
+| `PreToolUse` | `tool_execute_before` |
+| `PostToolUse` | `tool_execute_after` |
+| `PreCompact` | `message_loop_prompts_before` |
+| `SessionEnd` | `message_loop_end` |
+| `Stop` | `message_loop_end` |
+
+Hook command execution is handled by:
+- `python/helpers/ecc_sync/hook_runtime.py`
+
+Safety guarantees:
+- non-JSON payload objects are normalized before serialization
+- command timeout guard is enforced
+- failures are isolated to hook result payload (non-fatal to core flow)
+
+## System Prompt / Memory Integration
+
+Ea0 follows the same pattern used by framework-style prompt integrations:
+
+1. `usr/extensions/system_prompt/_50_ecc_context.py` appends ECC context each run
+2. primary source: `usr/prompts/fw.ecc.reference.md`
+3. fallback source: `usr/knowledge/core-memories/ecc/agent0-ecc-integration.md`
+
+This ensures Agent0 explicitly knows ECC is active and can prioritize ECC capabilities during execution.
+
+## Settings UI Integration
+
+Ea0 adds:
+- `Settings -> External Services -> ECC Integration`
+
+Panel capabilities:
+- `Install / Sync ECC`
+- `Update Latest (Git)`
+- `Create Backup Point`
+- `Restore Backup`
+
+Panel status fields:
+- health status
+- ECC git repository URL
+- current vendor SHA
+- installed/synced SHA
+- last sync timestamp
+- injection status flags (extension/prompt/core-memory)
+
+## API Actions
+
+Endpoint: `/ecc_sync`
+
+Supported actions:
 - `status`
 - `sync`
 - `update_latest`
@@ -26,86 +114,74 @@ Provides ECC API actions:
 - `backup_list`
 - `backup_restore`
 
-### UI
-Installs:
-- `webui/components/settings/ecc/ecc-settings.html`
-- `webui/components/settings/ecc/ecc-store.js`
+## Install on Fresh Agent0
 
-Patches:
-- `webui/components/settings/external/external-settings.html`
-
-### Prompt & Memory Integration
-Installs:
-- `usr/extensions/system_prompt/_50_ecc_context.py`
-- `usr/prompts/fw.ecc.reference.md`
-- `usr/knowledge/core-memories/ecc/agent0-ecc-integration.md`
-
-This follows the same pattern used by superpowers-style integrations: a system_prompt extension appends an ECC reference prompt each run.
-
-## Install into a Fresh Agent0
-
-### 1) Clone this plugin repo
 ```bash
 git clone https://github.com/Nunezchef/everything-agent0.git
 cd everything-agent0
-```
-
-### 2) Run installer against your Agent0 root
-```bash
-./scripts/install-into-agent0.sh /a0
-```
-
-If your Agent0 path is different, replace `/a0`.
-
-### 3) Restart Agent0
-Restart is required so new extensions are loaded.
-
-## Post-Install Verification
-
-1. Open Agent0 settings:
-- `Settings -> External Services -> ECC Integration`
-
-2. Confirm visible fields:
-- Health status
-- ECC Git repository
-- Current version
-- Installed version
-- Last sync
-- Injection status flags
-
-3. Confirm runtime files exist:
-- `usr/extensions/system_prompt/_50_ecc_context.py`
-- `usr/prompts/fw.ecc.reference.md`
-- `usr/knowledge/core-memories/ecc/agent0-ecc-integration.md`
-
-4. Use `Install / Sync ECC` once in UI.
-
-## Update Flow
-
-From ECC settings UI:
-- `Update Latest (Git)` pulls latest ECC vendor and re-syncs generated assets.
-- Optionally enable `Backup Before Update`.
-- Use `Restore Backup` if rollback is needed.
-
-## Backup & State
-
-ECC integration state lives under:
-- `usr/plugins/ecc-integration/state/manifest.json`
-- `usr/plugins/ecc-integration/state/vendor_state.json`
-- `usr/plugins/ecc-integration/state/hook_compatibility.json`
-- `usr/plugins/ecc-integration/backups/`
-
-## Important Notes
-
-- This repo is **plugin-only** (not a fork of Agent0).
-- Installer patches one Agent0 UI file (`external-settings.html`) to add ECC section link.
-- If you reinstall Agent0, re-run installer to restore ECC integration.
-
-## Development
-
-If you modify runtime files in this repo, rerun:
-```bash
 ./scripts/install-into-agent0.sh /a0
 ```
 
 Then restart Agent0.
+
+If your Agent0 root is not `/a0`, pass the correct path.
+
+## Operational Workflows
+
+### First-time bootstrap
+1. run installer
+2. restart Agent0
+3. open ECC Integration panel
+4. run `Install / Sync ECC`
+5. verify health = `healthy`
+
+### Daily workflow
+1. use Agent0 normally with ECC-enabled prompts/hooks
+2. update when needed with `Update Latest (Git)`
+3. keep `Backup Before Update` enabled for safe rollback
+
+### Safe upgrade workflow
+1. create backup point
+2. update latest
+3. verify injection flags and hook health
+4. rollback using `Restore Backup` if required
+
+### Disaster recovery workflow
+1. reinstall Agent0 base
+2. reinstall Ea0 plugin
+3. re-run sync
+4. restore backup point from `usr/plugins/ecc-integration/backups/` if needed
+
+## Verification Checklist
+
+After install/sync:
+- ECC panel appears under External Services
+- `status.health_report.status == healthy`
+- injection flags all active
+- generated ECC files present in `usr/skills/ecc`, `usr/agents/ecc`, `usr/knowledge/ecc-commands`
+- hook bridges present under `usr/extensions/*_ecc_*.py`
+- manifest exists at `usr/plugins/ecc-integration/state/manifest.json`
+
+CLI checks:
+```bash
+test -f /a0/usr/plugins/ecc-integration/state/manifest.json
+test -f /a0/usr/extensions/system_prompt/_50_ecc_context.py
+test -f /a0/usr/prompts/fw.ecc.reference.md
+test -d /a0/usr/skills/ecc
+test -d /a0/usr/agents/ecc
+```
+
+## Repository Layout
+
+- `plugin.yaml`: plugin metadata
+- `hooks.md`: runtime hook behavior summary
+- `scripts/install-into-agent0.sh`: installer for clean Agent0
+- `runtime/python/*`: API/tool/transform runtime payload
+- `runtime/webui/*`: ECC settings UI payload
+- `runtime/usr/*`: prompt/memory/system_prompt payload
+
+## Notes
+
+- Repo is intentionally plugin-only.
+- Installer patches `webui/components/settings/external/external-settings.html` once (idempotent guard included).
+- Re-run installer after Agent0 upgrades/reinstalls.
