@@ -137,6 +137,14 @@ If you want Agent0 to run installation for you, paste this:
 Install this plugin from main branch only: https://github.com/Nunezchef/Ea0.git. Clone it into /a0/usr/workdir/.a0-install and run: bash /a0/usr/workdir/.a0-install/install.sh /a0
 ```
 
+## Agent0 Auto-Install Prompt (Recommended)
+
+Use this exact prompt with Agent0 so users can install without manual troubleshooting:
+
+```text
+Install EA0 plugin from https://github.com/Nunezchef/Ea0.git (main branch only). Do a clean install: remove /a0/usr/workdir/.a0-install first, clone fresh into /a0/usr/workdir/.a0-install, run bash /a0/usr/workdir/.a0-install/install.sh /a0, and do NOT run /a0/docker/run/fs/ins/install_A0.sh. After install, verify /a0/python/api/ea0_sync.py contains clear_extensions_cache fallback and report the installed commit from /a0/usr/plugins/ea0/.installed-from-commit.
+```
+
 ## Post-Install Check
 
 After restart, verify:
