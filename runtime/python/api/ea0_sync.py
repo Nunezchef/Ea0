@@ -15,7 +15,11 @@ from python.helpers.ea0_sync.backup_points import (
 from python.helpers.ea0_sync.git_update import update_to_latest, get_repo_info
 from python.helpers.ea0_sync.vendor_manager import read_vendor_state
 from python.helpers.notification import NotificationManager, NotificationType, NotificationPriority
-from python.helpers.extension import clear_extensions_cache
+try:
+    from python.helpers.extension import clear_extensions_cache
+except ImportError:
+    def clear_extensions_cache() -> None:
+        return None
 
 
 class Ea0Sync(ApiHandler):

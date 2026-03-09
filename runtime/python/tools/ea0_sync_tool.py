@@ -5,7 +5,11 @@ from pathlib import Path
 from python.helpers.tool import Tool, Response
 from python.helpers.ea0_sync.sync import run_sync
 from python.helpers.notification import NotificationManager, NotificationType, NotificationPriority
-from python.helpers.extension import clear_extensions_cache
+try:
+    from python.helpers.extension import clear_extensions_cache
+except ImportError:
+    def clear_extensions_cache() -> None:
+        return None
 
 
 class Ea0SyncTool(Tool):
