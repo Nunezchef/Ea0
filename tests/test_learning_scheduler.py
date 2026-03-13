@@ -102,6 +102,28 @@ class LearningSchedulerTest(unittest.TestCase):
         self.assertEqual(result["uuid"], existing.uuid)
         self.assertEqual(fake_scheduler.added, [])
 
+    def test_returns_unavailable_when_scheduler_dependency_is_missing(self):
+        sys.modules.pop("python.helpers.task_scheduler", None)
+        module = load_module()
+
+        original_import = __import__
+
+        def failing_import(name, globals=None, locals=None, fromlist=(), level=0):
+            if name == "python.helpers.task_scheduler":
+                raise ModuleNotFoundError("No module named 'nest_asyncio'")
+            return original_import(name, globals, locals, fromlist, level)
+
+        import builtins
+        old_import = builtins.__import__
+        builtins.__import__ = failing_import
+        try:
+            result = asyncio.run(module.ensure_learning_schedule(workspace_root=Path("/tmp/workspace")))
+        finally:
+            builtins.__import__ = old_import
+
+        self.assertEqual(result["status"], "unavailable")
+        self.assertIn("nest_asyncio", result["error"])
+
 
 if __name__ == "__main__":
     unittest.main()

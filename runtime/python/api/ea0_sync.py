@@ -69,15 +69,20 @@ class Ea0Sync(ApiHandler):
 
     def _learning_status(self, workspace_root: Path) -> dict:
         import json
-        from python.helpers.task_scheduler import TaskScheduler
 
         learning_dir = learning_state_dir(workspace_root)
         status_path = learning_dir / "status.json"
         checkpoints_path = learning_dir / "checkpoints.json"
         observations_path = learning_dir / "observations.jsonl"
+        scheduler_error = ""
+        task = None
+        try:
+            from python.helpers.task_scheduler import TaskScheduler
 
-        scheduler = TaskScheduler.get()
-        task = scheduler.get_task_by_name(LEARNING_TASK_NAME)
+            scheduler = TaskScheduler.get()
+            task = scheduler.get_task_by_name(LEARNING_TASK_NAME)
+        except ModuleNotFoundError as e:
+            scheduler_error = str(e)
 
         observation_count = 0
         if observations_path.exists():
@@ -97,6 +102,7 @@ class Ea0Sync(ApiHandler):
                 "uuid": task.uuid if task else "",
                 "state": str(task.state) if task else "missing",
                 "next_run_minutes": task.get_next_run_minutes() if task else None,
+                "error": scheduler_error,
             },
             "observations": {
                 "count": observation_count,

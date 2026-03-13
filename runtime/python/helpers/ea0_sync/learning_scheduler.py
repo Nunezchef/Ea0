@@ -15,7 +15,15 @@ def _build_prompt(workspace_root: Path) -> str:
 
 
 async def ensure_learning_schedule(*, workspace_root: Path) -> dict[str, str]:
-    from python.helpers.task_scheduler import TaskScheduler, ScheduledTask, TaskSchedule
+    try:
+        from python.helpers.task_scheduler import TaskScheduler, ScheduledTask, TaskSchedule
+    except ModuleNotFoundError as e:
+        return {
+            "status": "unavailable",
+            "name": LEARNING_TASK_NAME,
+            "uuid": "",
+            "error": str(e),
+        }
 
     scheduler = TaskScheduler.get()
     existing = scheduler.get_task_by_name(LEARNING_TASK_NAME)
