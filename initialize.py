@@ -63,6 +63,43 @@ def _patch_external_settings(ext_file: Path) -> None:
     ext_file.write_text(text, encoding="utf-8")
 
 
+def _patch_agent_settings(settings_file: Path) -> None:
+    text = settings_file.read_text(encoding="utf-8")
+
+    helper_name = "_ea0_agent_subdir_options"
+    helper_def = """
+def _ea0_agent_subdir_options() -> list[FieldOption]:
+    seen: set[str] = set()
+    options: list[FieldOption] = []
+    for root in ("agents", "usr/agents"):
+        for subdir in files.get_subdirectories(root):
+            if subdir == "_example" or subdir in seen:
+                continue
+            seen.add(subdir)
+            options.append({"value": subdir, "label": subdir})
+    return options
+
+"""
+
+    if helper_name not in text:
+        anchor = "def convert_out(settings: Settings) -> SettingsOutput:\n"
+        if anchor not in text:
+            raise RuntimeError(f"Expected convert_out anchor not found in {settings_file}")
+        text = text.replace(anchor, helper_def + anchor, 1)
+
+    old_block = """            agent_subdirs=[{"value": subdir, "label": subdir}
+                for subdir in files.get_subdirectories("agents")
+                if subdir != "_example"],"""
+    new_block = """            agent_subdirs=_ea0_agent_subdir_options(),"""
+
+    if old_block in text:
+        text = text.replace(old_block, new_block, 1)
+    elif new_block not in text:
+        raise RuntimeError(f"Expected agent_subdirs block not found in {settings_file}")
+
+    settings_file.write_text(text, encoding="utf-8")
+
+
 def _ensure_vendor(a0_root: Path) -> Path:
     vendor = a0_root / "usr/everything-claude-code"
     if (vendor / ".git").is_dir():
@@ -139,6 +176,7 @@ def main() -> int:
 
     print("[init 3/6] Wiring EA0 section under External Services...")
     _patch_external_settings(a0_root / "webui/components/settings/external/external-settings.html")
+    _patch_agent_settings(a0_root / "python/helpers/settings.py")
 
     print("[init 4/6] Installing EA0 prompt injection + core memory...")
     _copy(
