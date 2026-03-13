@@ -1,8 +1,10 @@
 import asyncio
 import importlib.util
+import json
 import types
 import sys
 import unittest
+from tempfile import TemporaryDirectory
 from pathlib import Path
 
 
@@ -102,7 +104,7 @@ class LearningSchedulerTest(unittest.TestCase):
         self.assertEqual(result["uuid"], existing.uuid)
         self.assertEqual(fake_scheduler.added, [])
 
-    def test_returns_unavailable_when_scheduler_dependency_is_missing(self):
+    def test_uses_fallback_when_scheduler_dependency_is_missing(self):
         sys.modules.pop("python.helpers.task_scheduler", None)
         module = load_module()
 
@@ -117,12 +119,51 @@ class LearningSchedulerTest(unittest.TestCase):
         old_import = builtins.__import__
         builtins.__import__ = failing_import
         try:
-            result = asyncio.run(module.ensure_learning_schedule(workspace_root=Path("/tmp/workspace")))
+            with TemporaryDirectory() as tmp:
+                workspace_root = Path(tmp)
+                result = asyncio.run(module.ensure_learning_schedule(workspace_root=workspace_root))
         finally:
             builtins.__import__ = old_import
 
-        self.assertEqual(result["status"], "unavailable")
-        self.assertIn("nest_asyncio", result["error"])
+        self.assertEqual(result["status"], "created")
+        self.assertIn("nest_asyncio", result["warning"])
+
+    def test_writes_scheduler_file_when_dependency_is_missing(self):
+        sys.modules.pop("python.helpers.task_scheduler", None)
+        module = load_module()
+
+        original_import = __import__
+
+        def failing_import(name, globals=None, locals=None, fromlist=(), level=0):
+            if name == "python.helpers.task_scheduler":
+                raise ModuleNotFoundError("No module named 'nest_asyncio'")
+            return original_import(name, globals, locals, fromlist, level)
+
+        import builtins
+        old_import = builtins.__import__
+        builtins.__import__ = failing_import
+        try:
+            with TemporaryDirectory() as tmp:
+                workspace_root = Path(tmp)
+                scheduler_dir = workspace_root / "usr/scheduler"
+                scheduler_dir.mkdir(parents=True, exist_ok=True)
+                (scheduler_dir / "tasks.json").write_text('{"tasks":[]}', encoding="utf-8")
+
+                result = asyncio.run(module.ensure_learning_schedule(workspace_root=workspace_root))
+
+                payload = json.loads((scheduler_dir / "tasks.json").read_text(encoding="utf-8"))
+        finally:
+            builtins.__import__ = old_import
+
+        self.assertEqual(result["status"], "created")
+        self.assertEqual(result["name"], module.LEARNING_TASK_NAME)
+        self.assertEqual(len(payload["tasks"]), 1)
+        task = payload["tasks"][0]
+        self.assertEqual(task["name"], module.LEARNING_TASK_NAME)
+        self.assertEqual(task["type"], "scheduled")
+        self.assertEqual(task["schedule"]["minute"], "*/15")
+        self.assertTrue(task["context_id"])
+        self.assertIn("ea0_learning_tool", task["prompt"])
 
 
 if __name__ == "__main__":
