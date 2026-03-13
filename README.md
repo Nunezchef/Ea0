@@ -137,6 +137,25 @@ If you want Agent0 to run installation for you, paste this:
 Install this plugin from main branch only: https://github.com/Nunezchef/Ea0.git. Clone it into /a0/usr/workdir/.a0-install and run: bash /a0/usr/workdir/.a0-install/install.sh /a0
 ```
 
+## Agent0 Installation Instructions
+
+Use this section when the installer is being executed by Agent0 itself.
+
+Agent0 should follow this exact behavior:
+
+1. remove any previous temporary install directory at `/a0/usr/workdir/.a0-install`
+2. clone `https://github.com/Nunezchef/Ea0.git` from `main` into `/a0/usr/workdir/.a0-install`
+3. run `bash /a0/usr/workdir/.a0-install/install.sh /a0`
+4. do not run `/a0/docker/run/fs/ins/install_A0.sh`
+5. after installation, report the installed commit from `/a0/usr/plugins/ea0/.installed-from-commit`
+6. tell the user a full Agent0 backend restart is required
+
+Exact Agent0 instruction:
+
+```text
+Install EA0 plugin from https://github.com/Nunezchef/Ea0.git using main branch only. Remove /a0/usr/workdir/.a0-install first if it exists, clone fresh into /a0/usr/workdir/.a0-install, run bash /a0/usr/workdir/.a0-install/install.sh /a0, do NOT run /a0/docker/run/fs/ins/install_A0.sh, then report the installed commit from /a0/usr/plugins/ea0/.installed-from-commit and tell the user a full backend restart is required.
+```
+
 ## Agent0 Auto-Install Prompt (Recommended)
 
 Use this exact prompt with Agent0 so users can install without manual troubleshooting:
